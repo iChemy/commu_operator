@@ -1,0 +1,11 @@
+# Java build output
+backend/build/
+
+# Python generated files
+client/__pycache__/
+client/*.py[oc]
+client/.venv/
+client/build/
+client/dist/
+client/wheels/
+client/*.egg-info/
