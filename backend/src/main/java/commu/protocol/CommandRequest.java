@@ -23,26 +23,4 @@ public class CommandRequest {
     public List<RobotAction> getActions() {
         return actions;
     }
-
-    public void debug() {
-        boolean isAudioNull = audioFile == null;
-        boolean isActionsEmpty = actions.isEmpty();
-
-        if (isAudioNull && isActionsEmpty) {
-            System.out.println("no actions");
-            return;
-        }
-
-        if (!isAudioNull) {
-            System.out.println(audioFile);
-        }
-
-        if (!isActionsEmpty) {
-            StringBuilder builder = new StringBuilder();
-            for (RobotAction action : actions) {
-                builder.append(action.getType()).append(";");
-            }
-            System.out.println(builder.toString());
-        }
-    }
 }

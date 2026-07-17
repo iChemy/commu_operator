@@ -42,8 +42,8 @@ uv run python main.py list-servos
 uv run python main.py send --host COMMU_IP_ADDRESS --audio path/to/speech.wav
 uv run python main.py send --host COMMU_IP_ADDRESS --pose HEAD_Y=20 --duration-ms 800
 uv run python main.py send --host COMMU_IP_ADDRESS --led-body "#00aaff"
-uv run python main.py send --host COMMU_IP_ADDRESS --command command.json
-uv run python main.py batch --host COMMU_IP_ADDRESS batch.json
+uv run python main.py send --host COMMU_IP_ADDRESS --command examples/command_pose_led_wait.json
+uv run python main.py batch --host COMMU_IP_ADDRESS examples/batch_test.json
 ```
 
 送信内容だけ確認する場合:
@@ -56,6 +56,9 @@ MP3 など WAV 以外の音声を渡す場合、client 側で `ffmpeg` が必要
 client は送信前に音声を `Signed 16 bit Little Endian / 22050 Hz / Mono` の WAV に変換します。
 
 ## Command JSON
+
+`command` は、backend に 1 回送る操作のまとまりです。
+音声を同時に再生する場合は `send --audio path/to/file.wav --command command.json` のように指定します。
 
 ```json
 {
@@ -87,8 +90,14 @@ client は送信前に音声を `Signed 16 bit Little Endian / 22050 Hz / Mono` 
 
 `pose` は指定された姿勢へ `duration_ms` ミリ秒で移動します。
 姿勢を保ったまま待つ場合は、独立した `wait` action を使います。
+`led` action は CommU の LED 一式を更新します。
+未指定の `body` / `power_button` は `#000000`、未指定の `left_cheek` / `right_cheek` は `0` として扱われます。
 
 ## Batch JSON
+
+`batch` は command を複数並べたものです。
+client は各 command を順番に送信し、backend から `OK` が返ってから次に進みます。
+各 command には任意で `audio` を指定できます。
 
 ```json
 {
@@ -115,6 +124,8 @@ client は送信前に音声を `Signed 16 bit Little Endian / 22050 Hz / Mono` 
 
 `audio` が相対パスの場合は、batch JSON ファイルからの相対パスとして解決されます。
 
+テスト用 JSON は `client/examples/` 配下にあります。
+
 ## サポートするサーボ名
 
 - `BODY_P`
@@ -130,4 +141,3 @@ client は送信前に音声を `Signed 16 bit Little Endian / 22050 Hz / Mono` 
 - `L_EYE_Y`
 - `R_EYE_Y`
 - `EYELIDS`
-# commu_operator

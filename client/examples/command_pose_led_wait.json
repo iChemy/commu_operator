@@ -1,0 +1,34 @@
+{
+  "actions": [
+    {
+      "type": "pose",
+      "duration_ms": 800,
+      "pose": {
+        "HEAD_Y": 20,
+        "HEAD_P": -8
+      }
+    },
+    {
+      "type": "wait",
+      "duration_ms": 500
+    },
+    {
+      "type": "led",
+      "duration_ms": 200,
+      "led": {
+        "body": "#00aaff",
+        "left_cheek": 128,
+        "right_cheek": 128,
+        "power_button": "#ff6688"
+      }
+    },
+    {
+      "type": "pose",
+      "duration_ms": 800,
+      "pose": {
+        "HEAD_Y": 0,
+        "HEAD_P": 0
+      }
+    }
+  ]
+}

@@ -8,7 +8,8 @@ from .client import CommUClient
 from .commands import load_batch, load_command_from_args, resolve_audio_path
 from .config import DEFAULT_HOST, DEFAULT_PORT, DEFAULT_TIMEOUT
 from .errors import CommUClientError, InvalidCommandError
-from .models import Command, ServoName
+from .models import Command
+from .servos import SERVO_SPECS
 
 
 def main() -> None:
@@ -81,8 +82,18 @@ def add_led_arguments(parser: argparse.ArgumentParser) -> None:
 
 
 def list_servos(_args: argparse.Namespace) -> None:
-    for servo in ServoName:
-        print(servo.value)
+    print("name            range_deg    ratio    aliases")
+    print("--------------  -----------  -------  -------")
+    for spec in SERVO_SPECS:
+        aliases = ", ".join(spec.aliases) if spec.aliases else "-"
+        print(
+            f"{spec.name.value:<14}  "
+            f"{spec.range_text:<11}  "
+            f"{spec.reduction_ratio:<7g}  "
+            f"{aliases}"
+        )
+    print()
+    print("Angles in command JSON and --pose are degrees. Values outside range are clamped by backend.")
 
 
 def send_command(args: argparse.Namespace) -> None:

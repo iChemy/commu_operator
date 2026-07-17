@@ -23,11 +23,14 @@ MP3 など WAV 以外の音声を入力する場合は、別途 `ffmpeg` が必�
 
 ## コマンド
 
-サーボ名一覧:
+サーボ名と指定可能な角度範囲:
 
 ```sh
 uv run python main.py list-servos
 ```
+
+表示される `range_deg` は command JSON や `--pose` に degree 単位で指定する値の範囲です。
+範囲外の値は backend 側で安全範囲に丸められます。
 
 音声ファイルを送る:
 
@@ -94,3 +97,73 @@ uv run python main.py send --pose HEAD_Y=20 --duration-ms 800 --dry-run
 
 `pose`、`led`、`wait` は独立した操作です。
 姿勢を保つ時間は `wait` action として表現します。
+`led` action は CommU の LED 一式を更新します。
+未指定の `body` / `power_button` は `#000000`、未指定の `left_cheek` / `right_cheek` は `0` として扱われます。
+
+`command` は、backend に 1 回送る操作のまとまりです。
+`send --command command.json` では、この 1 つの command を 1 TCP 接続で送信します。
+音声を同時に再生したい場合は、command JSON に音声パスを書くのではなく、`--audio path/to/file.wav` を併用します。
+
+テスト用の command JSON:
+
+```sh
+uv run python main.py send --command examples/command_pose_led_wait.json --dry-run
+```
+
+実機へ送る場合:
+
+```sh
+uv run python main.py send --host COMMU_IP_ADDRESS --command examples/command_pose_led_wait.json
+```
+
+## Batch JSON
+
+`batch` は command を複数並べたものです。
+client は `commands` の先頭から順に 1 command ずつ送信し、backend から `OK` が返ってから次を送ります。
+各 command には必要に応じて `audio` を書けます。
+`audio` が相対パスの場合は、batch JSON ファイルからの相対パスとして解決されます。
+
+```json
+{
+  "commands": [
+    {
+      "audio": "audio/part_001.wav",
+      "actions": [
+        {
+          "type": "pose",
+          "duration_ms": 500,
+          "pose": {
+            "HEAD_Y": 20
+          }
+        },
+        {
+          "type": "wait",
+          "duration_ms": 500
+        }
+      ]
+    },
+    {
+      "actions": [
+        {
+          "type": "led",
+          "led": {
+            "body": "#00aaff"
+          }
+        }
+      ]
+    }
+  ]
+}
+```
+
+テスト用の batch JSON:
+
+```sh
+uv run python main.py batch examples/batch_test.json --dry-run
+```
+
+実機へ送る場合:
+
+```sh
+uv run python main.py batch --host COMMU_IP_ADDRESS examples/batch_test.json
+```

@@ -29,11 +29,10 @@ public class ClientHandler {
             try {
                 BufferedInputStream input = new BufferedInputStream(clientSocket.getInputStream());
                 CommandRequest request = decoder.decode(input);
-                request.debug();
                 robot.execute(request);
                 writeResponse(clientSocket, "OK\n");
             } catch (Exception e) {
-                CRobotUtil.Log(TAG, "Command failed: " + e.getMessage());
+                CRobotUtil.Log(TAG, "Command failed: " + formatError(e));
                 writeError(clientSocket, e);
             }
         } catch (IOException e) {
@@ -43,9 +42,17 @@ public class ClientHandler {
 
     private void writeError(Socket clientSocket, Exception error) {
         try {
-            writeResponse(clientSocket, "ERR " + error.getMessage() + "\n");
+            writeResponse(clientSocket, "ERR " + formatError(error) + "\n");
         } catch (Exception ignored) {
         }
+    }
+
+    private String formatError(Exception error) {
+        String message = error.getMessage();
+        if (message == null || message.trim().isEmpty()) {
+            return error.getClass().getSimpleName();
+        }
+        return message;
     }
 
     private void writeResponse(Socket clientSocket, String response) throws IOException {
