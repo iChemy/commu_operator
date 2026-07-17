@@ -29,6 +29,7 @@ public class ClientHandler {
             try {
                 BufferedInputStream input = new BufferedInputStream(clientSocket.getInputStream());
                 CommandRequest request = decoder.decode(input);
+                request.debug();
                 robot.execute(request);
                 writeResponse(clientSocket, "OK\n");
             } catch (Exception e) {
