@@ -30,7 +30,7 @@
           }
         },
         {
-          "type": "led",
+          "type": "pose",
           "duration_ms": 200,
           "led": {
             "body": "#000000",

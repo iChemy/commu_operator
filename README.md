@@ -77,7 +77,8 @@ client は送信前に音声を `Signed 16 bit Little Endian / 22050 Hz / Mono` 
       }
     },
     {
-      "type": "led",
+      "type": "pose",
+      "duration_ms": 300,
       "led": {
         "body": "#00aaff",
         "left_cheek": 128,
@@ -98,7 +99,9 @@ client は送信前に音声を `Signed 16 bit Little Endian / 22050 Hz / Mono` 
 `audio` が相対パスの場合は、command JSON ファイルからの相対パスとして解決されます。
 `pose` は指定された姿勢へ `duration_ms` ミリ秒で移動します。
 姿勢を保ったまま待つ場合は、独立した `wait` action を使います。
-`led` action は CommU の LED 一式を更新します。
+LED は `pose` action の `led` フィールドとして指定します。
+`pose` と `led` を同じ action に書くと、同じ `duration_ms` で姿勢遷移と LED 変化を実行します。
+LED だけを変えたい場合も、`pose` action に `led` だけを書きます。
 未指定の `body` / `power_button` は `#000000`、未指定の `left_cheek` / `right_cheek` は `0` として扱われます。
 
 ## Batch JSON

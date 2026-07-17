@@ -37,10 +37,10 @@ def build_metadata_and_audio(command: Command, base_path: Path | None = None) ->
             lines.append(f"{prefix}audio.length={len(audio_bytes)}")
         elif action.type == "pose":
             lines.append(f"{prefix}duration_ms={action.duration_ms}")
-            lines.append(f"{prefix}pose={format_pose(action.pose)}")
-        elif action.type == "led" and action.led is not None:
-            lines.append(f"{prefix}duration_ms={action.duration_ms}")
-            append_led_metadata(lines, prefix, action.led)
+            if action.pose:
+                lines.append(f"{prefix}pose={format_pose(action.pose)}")
+            if action.led is not None and not action.led.is_empty():
+                append_led_metadata(lines, prefix, action.led)
         elif action.type == "wait":
             lines.append(f"{prefix}duration_ms={action.duration_ms}")
 

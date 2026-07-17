@@ -53,6 +53,9 @@ LED を直接送る:
 uv run python main.py send --host COMMU_IP_ADDRESS --led-body "#00aaff" --led-left-cheek 128
 ```
 
+LED も `pose` action の一部として送られるため、`--duration-ms` を指定できます。
+姿勢と LED を同時に変化させたい場合は、`--pose` と `--led-*` を同じ `send` に指定します。
+
 command JSON を送る:
 
 ```sh
@@ -92,7 +95,8 @@ uv run python main.py send --pose HEAD_Y=20 --duration-ms 800 --dry-run
       "duration_ms": 500
     },
     {
-      "type": "led",
+      "type": "pose",
+      "duration_ms": 300,
       "led": {
         "body": "#00aaff",
         "left_cheek": 128
@@ -102,12 +106,14 @@ uv run python main.py send --pose HEAD_Y=20 --duration-ms 800 --dry-run
 }
 ```
 
-`audio`、`pose`、`led`、`wait` は独立した操作です。
+`audio`、`pose`、`wait` は独立した操作です。
 `audio` action は音声再生を開始するだけで、`duration_ms` は指定できません。
 音声再生中だけ動作を止めたい場合は、音声長に相当する `wait` action を `audio` の後に置きます。
 `audio` が相対パスの場合は、command JSON ファイルからの相対パスとして解決されます。
 姿勢を保つ時間は `wait` action として表現します。
-`led` action は CommU の LED 一式を更新します。
+LED は `pose` action の `led` フィールドとして指定します。
+`pose` と `led` を同じ action に書くと、同じ `duration_ms` で姿勢遷移と LED 変化を実行します。
+LED だけを変えたい場合も、`pose` action に `led` だけを書きます。
 未指定の `body` / `power_button` は `#000000`、未指定の `left_cheek` / `right_cheek` は `0` として扱われます。
 
 `command` は、backend に 1 回送る操作のまとまりです。
@@ -161,7 +167,8 @@ backend は `audio` action に到達した時点で音声再生を開始し、�
     {
       "actions": [
         {
-          "type": "led",
+          "type": "pose",
+          "duration_ms": 300,
           "led": {
             "body": "#00aaff"
           }

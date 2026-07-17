@@ -36,7 +36,7 @@ class LEDSettings(BaseModel):
 
 
 class Action(BaseModel):
-    type: Literal["audio", "pose", "led", "wait"]
+    type: Literal["audio", "pose", "wait"]
     duration_ms: int = Field(default=0, ge=0)
     audio: Optional[str] = None
     pose: Dict[ServoName, float] = Field(default_factory=dict)
@@ -47,12 +47,13 @@ class Action(BaseModel):
         if self.type == "audio":
             if self.audio is None or not self.audio.strip():
                 raise ValueError("audio action requires audio")
-            if self.duration_ms != 0:
+            if "duration_ms" in self.model_fields_set:
                 raise ValueError("audio action does not accept duration_ms")
-        elif self.type == "pose" and not self.pose:
-            raise ValueError("pose action requires pose")
-        elif self.type == "led" and (self.led is None or self.led.is_empty()):
-            raise ValueError("led action requires at least one LED value")
+        elif self.type == "pose":
+            if not self.pose and (self.led is None or self.led.is_empty()):
+                raise ValueError("pose action requires pose or led")
+            if "duration_ms" not in self.model_fields_set:
+                raise ValueError("pose action requires duration_ms")
         return self
 
 

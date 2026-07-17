@@ -21,12 +21,11 @@ def build_direct_actions(args: argparse.Namespace) -> List[Action]:
     if args.audio:
         actions.append(Action(type="audio", audio=str(args.audio)))
 
+    pose = {}
     if args.pose:
-        pose = {}
         for item in args.pose:
             name, angle = parse_pose_argument(item)
             pose[name] = angle
-        actions.append(Action(type="pose", duration_ms=args.duration_ms, pose=pose))
 
     led = LEDSettings(
         body=args.led_body,
@@ -34,8 +33,8 @@ def build_direct_actions(args: argparse.Namespace) -> List[Action]:
         left_cheek=args.led_left_cheek,
         right_cheek=args.led_right_cheek,
     )
-    if not led.is_empty():
-        actions.append(Action(type="led", duration_ms=args.duration_ms, led=led))
+    if pose or not led.is_empty():
+        actions.append(Action(type="pose", duration_ms=args.duration_ms, pose=pose, led=led))
 
     if args.wait_ms is not None:
         actions.append(Action(type="wait", duration_ms=args.wait_ms))

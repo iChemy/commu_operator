@@ -2,7 +2,6 @@ package commu.robot;
 
 import commu.audio.SpeechPlayer;
 import commu.model.AudioAction;
-import commu.model.LedAction;
 import commu.model.PoseAction;
 import commu.model.RobotAction;
 import commu.model.WaitAction;
@@ -58,8 +57,6 @@ public class RobotController implements AutoCloseable {
             executeAudio((AudioAction) action, index, total);
         } else if (action instanceof PoseAction) {
             executePose((PoseAction) action, index, total);
-        } else if (action instanceof LedAction) {
-            executeLed((LedAction) action, index, total);
         } else if (action instanceof WaitAction) {
             executeWait((WaitAction) action, index, total);
         } else {
@@ -78,21 +75,15 @@ public class RobotController implements AutoCloseable {
         if (!action.getPose().isEmpty()) {
             pose.SetPose(action.getPose());
         }
+        if (action.hasLed()) {
+            pose.setLED_CommU(
+                    action.getBodyLed(),
+                    action.getLeftCheek(),
+                    action.getRightCheek(),
+                    action.getPowerButtonLed());
+        }
 
         CRobotUtil.Log(TAG, "pose action " + index + "/" + total + ": " + action.getDurationMs() + " ms");
-        motion.play(pose, action.getDurationMs());
-        motion.waitEndinterpAll();
-    }
-
-    private void executeLed(LedAction action, int index, int total) {
-        CRobotPose pose = new CRobotPose();
-        pose.setLED_CommU(
-                action.getBodyLed(),
-                action.getLeftCheek(),
-                action.getRightCheek(),
-                action.getPowerButtonLed());
-
-        CRobotUtil.Log(TAG, "led action " + index + "/" + total + ": " + action.getDurationMs() + " ms");
         motion.play(pose, action.getDurationMs());
         motion.waitEndinterpAll();
     }

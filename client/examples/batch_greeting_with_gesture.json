@@ -7,16 +7,6 @@
           "audio": "greeting.mp3"
         },
         {
-          "type": "led",
-          "duration_ms": 100,
-          "led": {
-            "body": "#00aaff",
-            "left_cheek": 96,
-            "right_cheek": 96,
-            "power_button": "#00aaff"
-          }
-        },
-        {
           "type": "pose",
           "duration_ms": 500,
           "pose": {
@@ -24,6 +14,12 @@
             "HEAD_P": -6,
             "R_SHOULDER_P": -45,
             "R_SHOULDER_R": -18
+          },
+          "led": {
+            "body": "#00aaff",
+            "left_cheek": 96,
+            "right_cheek": 96,
+            "power_button": "#00aaff"
           }
         }
       ]
@@ -59,7 +55,7 @@
           }
         },
         {
-          "type": "led",
+          "type": "pose",
           "duration_ms": 300,
           "led": {
             "body": "#000000",

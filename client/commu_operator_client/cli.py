@@ -50,7 +50,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--duration-ms",
         type=int,
         default=1000,
-        help="duration for direct pose or LED action in milliseconds",
+        help="duration for direct pose action in milliseconds",
     )
     send_parser.add_argument("--wait-ms", type=int, help="append a wait action in milliseconds")
     add_led_arguments(send_parser)

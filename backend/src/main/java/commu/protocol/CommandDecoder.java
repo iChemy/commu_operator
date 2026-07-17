@@ -1,7 +1,6 @@
 package commu.protocol;
 
 import commu.model.AudioAction;
-import commu.model.LedAction;
 import commu.model.PoseAction;
 import commu.model.RobotAction;
 import commu.model.WaitAction;
@@ -69,6 +68,7 @@ public class CommandDecoder {
             String prefix = "action." + i + ".";
             String type = metadata.getProperty(prefix + "type", "").trim().toLowerCase(Locale.ROOT);
             if ("audio".equals(type)) {
+                rejectDuration(metadata, prefix, "audio");
                 int audioLength = readInt(metadata, prefix + "audio.length", 0);
                 if (audioLength <= 0) {
                     throw new IOException("audio action requires audio payload");
@@ -77,14 +77,13 @@ public class CommandDecoder {
             } else if ("pose".equals(type)) {
                 actions.add(new PoseAction(
                         readInt(metadata, prefix + "duration_ms", 1000),
-                        parsePose(metadata.getProperty(prefix + "pose", ""))));
-            } else if ("led".equals(type)) {
-                actions.add(new LedAction(
-                        readInt(metadata, prefix + "duration_ms", 0),
+                        parsePose(metadata.getProperty(prefix + "pose", "")),
                         parseColor(metadata.getProperty(prefix + "led.body", "")),
                         parseColor(metadata.getProperty(prefix + "led.power_button", "")),
                         readInt(metadata, prefix + "led.left_cheek", -1),
                         readInt(metadata, prefix + "led.right_cheek", -1)));
+            } else if ("led".equals(type)) {
+                throw new IOException("led is not an action type; put led inside a pose action");
             } else if ("wait".equals(type)) {
                 actions.add(new WaitAction(readInt(metadata, prefix + "duration_ms", 0)));
             } else {
@@ -93,6 +92,12 @@ public class CommandDecoder {
         }
 
         return actions;
+    }
+
+    private void rejectDuration(Properties metadata, String prefix, String type) throws IOException {
+        if (metadata.getProperty(prefix + "duration_ms") != null) {
+            throw new IOException(type + " action does not accept duration_ms");
+        }
     }
 
     private Path readAudioPayload(DataInputStream input, int actionIndex, int audioLength) throws IOException {
