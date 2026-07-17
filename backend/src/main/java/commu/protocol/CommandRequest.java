@@ -25,22 +25,22 @@ public class CommandRequest {
     }
 
     public void debug() {
-        Boolean isAudioNull = audioFile == null;
-        Boolean isActionsEmpty = actions.size() == 0;
+        boolean isAudioNull = audioFile == null;
+        boolean isActionsEmpty = actions.isEmpty();
 
-        if (isAudioNull & isActionsEmpty) {
+        if (isAudioNull && isActionsEmpty) {
             System.out.println("no actions");
             return;
         }
 
-        if (!isActionsEmpty) {
+        if (!isAudioNull) {
             System.out.println(audioFile);
         }
 
         if (!isActionsEmpty) {
             StringBuilder builder = new StringBuilder();
-            for (RobotAction action: actions) {
-                builder.append(action.getType() + ";");
+            for (RobotAction action : actions) {
+                builder.append(action.getType()).append(";");
             }
             System.out.println(builder.toString());
         }
