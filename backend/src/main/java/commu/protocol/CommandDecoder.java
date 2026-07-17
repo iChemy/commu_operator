@@ -1,5 +1,6 @@
 package commu.protocol;
 
+import commu.model.AudioAction;
 import commu.model.LedAction;
 import commu.model.PoseAction;
 import commu.model.RobotAction;
@@ -28,22 +29,21 @@ public class CommandDecoder {
     private static final int BUFFER_SIZE = 8192;
     private static final Map<String, ServoSpec> SERVO_SPECS = createServoSpecs();
 
-    private final Path audioFile;
+    private final Path audioDirectory;
 
     public CommandDecoder() {
-        this(Paths.get("sound", "current_command.wav"));
+        this(Paths.get("sound"));
     }
 
-    public CommandDecoder(Path audioFile) {
-        this.audioFile = audioFile;
+    public CommandDecoder(Path audioDirectory) {
+        this.audioDirectory = audioDirectory;
     }
 
     public CommandRequest decode(InputStream inputStream) throws IOException {
         DataInputStream input = new DataInputStream(inputStream);
         Properties metadata = readMetadata(input);
-        Path audioFile = readAudioPayload(input, metadata);
-        List<RobotAction> actions = readActions(metadata);
-        return new CommandRequest(audioFile, actions);
+        List<RobotAction> actions = readActions(input, metadata);
+        return new CommandRequest(actions);
     }
 
     private Properties readMetadata(DataInputStream input) throws IOException {
@@ -61,40 +61,20 @@ public class CommandDecoder {
         return metadata;
     }
 
-    private Path readAudioPayload(DataInputStream input, Properties metadata) throws IOException {
-        int audioLength = readInt(metadata, "audio.length", 0);
-        if (audioLength <= 0) {
-            return null;
-        }
-
-        Path parent = audioFile.getParent();
-        if (parent != null) {
-            Files.createDirectories(parent);
-        }
-
-        byte[] buffer = new byte[BUFFER_SIZE];
-        int remaining = audioLength;
-        try (java.io.OutputStream output = Files.newOutputStream(audioFile)) {
-            while (remaining > 0) {
-                int read = input.read(buffer, 0, Math.min(buffer.length, remaining));
-                if (read < 0) {
-                    throw new IOException("audio payload ended early");
-                }
-                output.write(buffer, 0, read);
-                remaining -= read;
-            }
-        }
-        return audioFile;
-    }
-
-    private List<RobotAction> readActions(Properties metadata) throws IOException {
+    private List<RobotAction> readActions(DataInputStream input, Properties metadata) throws IOException {
         int count = readInt(metadata, "actions", 0);
         List<RobotAction> actions = new ArrayList<>();
 
         for (int i = 0; i < count; i++) {
             String prefix = "action." + i + ".";
             String type = metadata.getProperty(prefix + "type", "").trim().toLowerCase(Locale.ROOT);
-            if ("pose".equals(type)) {
+            if ("audio".equals(type)) {
+                int audioLength = readInt(metadata, prefix + "audio.length", 0);
+                if (audioLength <= 0) {
+                    throw new IOException("audio action requires audio payload");
+                }
+                actions.add(new AudioAction(readAudioPayload(input, i, audioLength)));
+            } else if ("pose".equals(type)) {
                 actions.add(new PoseAction(
                         readInt(metadata, prefix + "duration_ms", 1000),
                         parsePose(metadata.getProperty(prefix + "pose", ""))));
@@ -113,6 +93,25 @@ public class CommandDecoder {
         }
 
         return actions;
+    }
+
+    private Path readAudioPayload(DataInputStream input, int actionIndex, int audioLength) throws IOException {
+        Files.createDirectories(audioDirectory);
+        Path audioFile = audioDirectory.resolve("action_" + actionIndex + ".wav");
+
+        byte[] buffer = new byte[BUFFER_SIZE];
+        int remaining = audioLength;
+        try (java.io.OutputStream output = Files.newOutputStream(audioFile)) {
+            while (remaining > 0) {
+                int read = input.read(buffer, 0, Math.min(buffer.length, remaining));
+                if (read < 0) {
+                    throw new IOException("audio payload ended early");
+                }
+                output.write(buffer, 0, read);
+                remaining -= read;
+            }
+        }
+        return audioFile;
     }
 
     private Map<Byte, Short> parsePose(String value) throws IOException {

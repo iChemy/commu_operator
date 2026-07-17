@@ -1,6 +1,7 @@
 package commu.robot;
 
 import commu.audio.SpeechPlayer;
+import commu.model.AudioAction;
 import commu.model.LedAction;
 import commu.model.PoseAction;
 import commu.model.RobotAction;
@@ -8,7 +9,6 @@ import commu.model.WaitAction;
 import commu.protocol.CommandRequest;
 
 import java.io.IOException;
-import java.nio.file.Path;
 
 import jp.vstone.RobotLib.CCommUMotion;
 import jp.vstone.RobotLib.CRobotMem;
@@ -44,25 +44,19 @@ public class RobotController implements AutoCloseable {
     }
 
     public synchronized void execute(CommandRequest request) throws IOException, InterruptedException {
-        Path audioFile = request.getAudioFile();
-        CRobotUtil.Log(TAG, "Received command: audio=" + audioFile + ", actions=" + request.getActions().size());
-
-        Process audioProcess = null;
-        if (audioFile != null) {
-            audioProcess = SpeechPlayer.play(audioFile);
-        }
+        CRobotUtil.Log(TAG, "Received command: actions=" + request.getActions().size());
 
         int index = 1;
         for (RobotAction action : request.getActions()) {
             executeAction(action, index, request.getActions().size());
             index++;
         }
-
-        waitAudioEnd(audioProcess);
     }
 
-    private void executeAction(RobotAction action, int index, int total) {
-        if (action instanceof PoseAction) {
+    private void executeAction(RobotAction action, int index, int total) throws IOException {
+        if (action instanceof AudioAction) {
+            executeAudio((AudioAction) action, index, total);
+        } else if (action instanceof PoseAction) {
             executePose((PoseAction) action, index, total);
         } else if (action instanceof LedAction) {
             executeLed((LedAction) action, index, total);
@@ -71,6 +65,11 @@ public class RobotController implements AutoCloseable {
         } else {
             throw new IllegalArgumentException("unsupported action type: " + action.getType());
         }
+    }
+
+    private void executeAudio(AudioAction action, int index, int total) throws IOException {
+        CRobotUtil.Log(TAG, "audio action " + index + "/" + total + ": " + action.getAudioFile());
+        SpeechPlayer.play(action.getAudioFile());
     }
 
     private void executePose(PoseAction action, int index, int total) {
@@ -101,10 +100,6 @@ public class RobotController implements AutoCloseable {
     private void executeWait(WaitAction action, int index, int total) {
         CRobotUtil.Log(TAG, "wait action " + index + "/" + total + ": " + action.getDurationMs() + " ms");
         CRobotUtil.wait(action.getDurationMs());
-    }
-
-    private void waitAudioEnd(Process audioProcess) throws InterruptedException {
-        SpeechPlayer.waitUntilFinished(audioProcess);
     }
 
     @Override

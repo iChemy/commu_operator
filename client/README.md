@@ -38,6 +38,9 @@ uv run python main.py list-servos
 uv run python main.py send --host COMMU_IP_ADDRESS --audio path/to/speech.wav
 ```
 
+`--audio` は `audio` action を 1 つ作り、音声再生を開始します。
+音声の終了は待ちません。
+
 姿勢を直接送る:
 
 ```sh
@@ -56,7 +59,7 @@ command JSON を送る:
 uv run python main.py send --host COMMU_IP_ADDRESS --command command.json
 ```
 
-batch JSON を順番に送る:
+batch JSON を 1 command にまとめて送る:
 
 ```sh
 uv run python main.py batch --host COMMU_IP_ADDRESS batch.json
@@ -73,6 +76,10 @@ uv run python main.py send --pose HEAD_Y=20 --duration-ms 800 --dry-run
 ```json
 {
   "actions": [
+    {
+      "type": "audio",
+      "audio": "greeting.mp3"
+    },
     {
       "type": "pose",
       "duration_ms": 800,
@@ -95,14 +102,18 @@ uv run python main.py send --pose HEAD_Y=20 --duration-ms 800 --dry-run
 }
 ```
 
-`pose`、`led`、`wait` は独立した操作です。
+`audio`、`pose`、`led`、`wait` は独立した操作です。
+`audio` action は音声再生を開始するだけで、`duration_ms` は指定できません。
+音声再生中だけ動作を止めたい場合は、音声長に相当する `wait` action を `audio` の後に置きます。
+`audio` が相対パスの場合は、command JSON ファイルからの相対パスとして解決されます。
 姿勢を保つ時間は `wait` action として表現します。
 `led` action は CommU の LED 一式を更新します。
 未指定の `body` / `power_button` は `#000000`、未指定の `left_cheek` / `right_cheek` は `0` として扱われます。
 
 `command` は、backend に 1 回送る操作のまとまりです。
 `send --command command.json` では、この 1 つの command を 1 TCP 接続で送信します。
-音声を同時に再生したい場合は、command JSON に音声パスを書くのではなく、`--audio path/to/file.wav` を併用します。
+音声を含めたい場合は、command JSON 内に `audio` action を書きます。
+`--audio` は JSON を使わずに音声再生だけを直接送るための簡易オプションです。
 
 テスト用の command JSON:
 
@@ -118,17 +129,22 @@ uv run python main.py send --host COMMU_IP_ADDRESS --command examples/command_po
 
 ## Batch JSON
 
-`batch` は command を複数並べたものです。
-client は `commands` の先頭から順に 1 command ずつ送信し、backend から `OK` が返ってから次を送ります。
-各 command には必要に応じて `audio` を書けます。
+`batch` は command を複数並べたものですが、送信時には全 command の `actions` を 1 つに結合し、1 TCP 接続で 1 command として送ります。
+command 間で `OK` 待ちをしないため、通信往復による余分な遅延は入りません。
+時間制御は `pose.duration_ms` と `wait.duration_ms` で明示します。
+音声付きで実行したい場合は、`audio` action を置きます。
+backend は `audio` action に到達した時点で音声再生を開始し、待たずに次の action へ進みます。
 `audio` が相対パスの場合は、batch JSON ファイルからの相対パスとして解決されます。
 
 ```json
 {
   "commands": [
     {
-      "audio": "audio/part_001.wav",
       "actions": [
+        {
+          "type": "audio",
+          "audio": "audio/part_001.wav"
+        },
         {
           "type": "pose",
           "duration_ms": 500,
@@ -162,8 +178,38 @@ client は `commands` の先頭から順に 1 command ずつ送信し、backend 
 uv run python main.py batch examples/batch_test.json --dry-run
 ```
 
+音声付きテスト用の batch JSON:
+
+```sh
+uv run python main.py batch examples/batch_greeting_with_gesture.json --dry-run
+```
+
 実機へ送る場合:
 
 ```sh
 uv run python main.py batch --host COMMU_IP_ADDRESS examples/batch_test.json
+uv run python main.py batch --host COMMU_IP_ADDRESS examples/batch_greeting_with_gesture.json
+```
+
+## サーボ詳細
+
+```
+> uv run python main.py list-servos
+name            range_deg    ratio
+--------------  -----------  -------
+BODY_P          -15..15      3.833  
+BODY_Y          -67..67      1      
+L_SHOULDER_P    -108..108    1.364  
+L_SHOULDER_R    -45..30      1      
+R_SHOULDER_P    -108..108    1.364  
+R_SHOULDER_R    -30..45      1      
+HEAD_P          -20..25      1      
+HEAD_R          -15..15      4.333  
+HEAD_Y          -85..85      1      
+EYE_P           -22..22      1      
+L_EYE_Y         -35..20      1      
+R_EYE_Y         -20..35      1      
+EYELIDS         -65..3       1      
+
+Angles in command JSON and --pose are degrees. Values outside range are clamped by backend.
 ```

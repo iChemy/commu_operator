@@ -1,31 +1,60 @@
 import struct
+from pathlib import Path
 from typing import Dict, List
 
+from .audio import load_audio
 from .models import Command, LEDSettings, ServoName
 
 
-def build_payload(command: Command, audio_bytes: bytes = b"") -> bytes:
-    metadata = build_metadata(command, len(audio_bytes))
-    return struct.pack(">I", len(metadata)) + metadata + audio_bytes
+def build_payload(command: Command, base_path: Path | None = None) -> bytes:
+    metadata, audio_payload = build_metadata_and_audio(command, base_path)
+    return struct.pack(">I", len(metadata)) + metadata + audio_payload
 
 
-def build_metadata(command: Command, audio_length: int = 0) -> bytes:
+def build_metadata(command: Command, base_path: Path | None = None) -> bytes:
+    metadata, _audio_payload = build_metadata_and_audio(command, base_path)
+    return metadata
+
+
+def audio_payload_length(command: Command, base_path: Path | None = None) -> int:
+    _metadata, audio_payload = build_metadata_and_audio(command, base_path)
+    return len(audio_payload)
+
+
+def build_metadata_and_audio(command: Command, base_path: Path | None = None) -> tuple[bytes, bytes]:
     lines = [
-        f"audio.length={audio_length}",
         f"actions={len(command.actions)}",
     ]
+    audio_chunks = []
 
     for index, action in enumerate(command.actions):
         prefix = f"action.{index}."
         lines.append(f"{prefix}type={action.type}")
-        lines.append(f"{prefix}duration_ms={action.duration_ms}")
 
-        if action.type == "pose":
+        if action.type == "audio":
+            audio_bytes = load_audio(resolve_audio_path(action.audio, base_path))
+            audio_chunks.append(audio_bytes)
+            lines.append(f"{prefix}audio.length={len(audio_bytes)}")
+        elif action.type == "pose":
+            lines.append(f"{prefix}duration_ms={action.duration_ms}")
             lines.append(f"{prefix}pose={format_pose(action.pose)}")
         elif action.type == "led" and action.led is not None:
+            lines.append(f"{prefix}duration_ms={action.duration_ms}")
             append_led_metadata(lines, prefix, action.led)
+        elif action.type == "wait":
+            lines.append(f"{prefix}duration_ms={action.duration_ms}")
 
-    return ("\n".join(lines) + "\n").encode("utf-8")
+    return ("\n".join(lines) + "\n").encode("utf-8"), b"".join(audio_chunks)
+
+
+def resolve_audio_path(audio: str | None, base_path: Path | None) -> Path:
+    if audio is None:
+        raise ValueError("audio action requires audio")
+
+    path = Path(audio)
+    if path.is_absolute() or base_path is None:
+        return path
+    return base_path / path
 
 
 def append_led_metadata(lines: List[str], prefix: str, led: LEDSettings) -> None:

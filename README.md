@@ -58,11 +58,16 @@ client は送信前に音声を `Signed 16 bit Little Endian / 22050 Hz / Mono` 
 ## Command JSON
 
 `command` は、backend に 1 回送る操作のまとまりです。
-音声を同時に再生する場合は `send --audio path/to/file.wav --command command.json` のように指定します。
+音声を含めたい場合は、command JSON 内に `audio` action を書きます。
+`--audio` は JSON を使わずに音声再生だけを直接送るための簡易オプションです。
 
 ```json
 {
   "actions": [
+    {
+      "type": "audio",
+      "audio": "greeting.mp3"
+    },
     {
       "type": "pose",
       "duration_ms": 400,
@@ -88,6 +93,9 @@ client は送信前に音声を `Signed 16 bit Little Endian / 22050 Hz / Mono` 
 }
 ```
 
+`audio` action は音声再生を開始するだけで、`duration_ms` は指定できません。
+音声再生中だけ動作を止めたい場合は、音声長に相当する `wait` action を `audio` の後に置きます。
+`audio` が相対パスの場合は、command JSON ファイルからの相対パスとして解決されます。
 `pose` は指定された姿勢へ `duration_ms` ミリ秒で移動します。
 姿勢を保ったまま待つ場合は、独立した `wait` action を使います。
 `led` action は CommU の LED 一式を更新します。
@@ -95,16 +103,21 @@ client は送信前に音声を `Signed 16 bit Little Endian / 22050 Hz / Mono` 
 
 ## Batch JSON
 
-`batch` は command を複数並べたものです。
-client は各 command を順番に送信し、backend から `OK` が返ってから次に進みます。
-各 command には任意で `audio` を指定できます。
+`batch` は command を複数並べたものですが、送信時には全 command の `actions` を 1 つに結合し、1 TCP 接続で 1 command として送ります。
+command 間で `OK` 待ちをしないため、通信往復による余分な遅延は入りません。
+音声付きで実行する場合は、`audio` action を置きます。
+backend は `audio` action に到達した時点で音声再生を開始し、待たずに次の action へ進みます。
+`audio` が相対パスの場合は、batch JSON ファイルからの相対パスとして解決されます。
 
 ```json
 {
   "commands": [
     {
-      "audio": "audio/part_001.wav",
       "actions": [
+        {
+          "type": "audio",
+          "audio": "audio/part_001.wav"
+        },
         {
           "type": "pose",
           "duration_ms": 500,
@@ -121,8 +134,6 @@ client は各 command を順番に送信し、backend から `OK` が返って�
   ]
 }
 ```
-
-`audio` が相対パスの場合は、batch JSON ファイルからの相対パスとして解決されます。
 
 テスト用 JSON は `client/examples/` 配下にあります。
 

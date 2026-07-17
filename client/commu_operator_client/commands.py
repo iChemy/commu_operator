@@ -1,6 +1,6 @@
 import argparse
 from pathlib import Path
-from typing import List, Optional
+from typing import List
 
 from .errors import InvalidCommandError
 from .models import Action, Command, CommandBatch, LEDSettings, ServoName
@@ -17,6 +17,9 @@ def load_command_from_args(args: argparse.Namespace) -> Command:
 
 def build_direct_actions(args: argparse.Namespace) -> List[Action]:
     actions = []
+
+    if args.audio:
+        actions.append(Action(type="audio", audio=str(args.audio)))
 
     if args.pose:
         pose = {}
@@ -44,14 +47,11 @@ def load_batch(path: Path) -> CommandBatch:
     return CommandBatch.model_validate_json(path.read_text(encoding="utf-8"))
 
 
-def resolve_audio_path(batch_path: Path, audio: Optional[str]) -> Optional[Path]:
-    if audio is None:
-        return None
-
-    path = Path(audio)
-    if path.is_absolute():
-        return path
-    return batch_path.parent / path
+def flatten_batch(batch: CommandBatch) -> Command:
+    actions = []
+    for item in batch.commands:
+        actions.extend(item.actions)
+    return Command(actions=actions)
 
 
 def parse_pose_argument(value: str) -> tuple[ServoName, float]:

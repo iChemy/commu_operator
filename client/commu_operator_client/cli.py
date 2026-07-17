@@ -3,12 +3,12 @@ from pathlib import Path
 
 from pydantic import ValidationError
 
-from .audio import load_audio
 from .client import CommUClient
-from .commands import load_batch, load_command_from_args, resolve_audio_path
+from .commands import flatten_batch, load_batch, load_command_from_args
 from .config import DEFAULT_HOST, DEFAULT_PORT, DEFAULT_TIMEOUT
 from .errors import CommUClientError, InvalidCommandError
 from .models import Command
+from .protocol import audio_payload_length
 from .servos import SERVO_SPECS
 
 
@@ -57,7 +57,7 @@ def build_parser() -> argparse.ArgumentParser:
     send_parser.add_argument("--dry-run", action="store_true")
     send_parser.set_defaults(func=send_command)
 
-    batch_parser = subparsers.add_parser("batch", help="send commands from a batch JSON file")
+    batch_parser = subparsers.add_parser("batch", help="flatten a batch JSON file and send it as one command")
     batch_parser.add_argument("batch", type=Path, help="batch JSON file")
     add_connection_arguments(batch_parser)
     batch_parser.add_argument("--dry-run", action="store_true")
@@ -96,35 +96,33 @@ def list_servos(_args: argparse.Namespace) -> None:
 
 def send_command(args: argparse.Namespace) -> None:
     command = load_command_from_args(args)
-    audio_bytes = load_audio(args.audio)
+    base_path = args.command.parent if args.command is not None else Path.cwd()
     client = CommUClient(args.host, args.port, args.timeout)
 
     if args.dry_run:
-        print_metadata(client, command, audio_bytes)
+        print_metadata(client, command, base_path)
         return
 
-    client.send(command, audio_bytes)
+    client.send(command, base_path)
     print("OK")
 
 
 def batch_command(args: argparse.Namespace) -> None:
     batch = load_batch(args.batch)
+    command = flatten_batch(batch)
     client = CommUClient(args.host, args.port, args.timeout)
+    base_path = args.batch.parent
 
-    for index, item in enumerate(batch.commands, start=1):
-        audio_bytes = load_audio(resolve_audio_path(args.batch, item.audio))
-        command = Command(actions=item.actions)
+    if args.dry_run:
+        print(f"# batch.commands={len(batch.commands)}")
+        print_metadata(client, command, base_path)
+        return
 
-        if args.dry_run:
-            print(f"# command {index}")
-            print_metadata(client, command, audio_bytes)
-            continue
-
-        client.send(command, audio_bytes)
-        print(f"OK command {index}/{len(batch.commands)}")
+    client.send(command, base_path)
+    print("OK batch")
 
 
-def print_metadata(client: CommUClient, command: Command, audio_bytes: bytes) -> None:
-    metadata = client.build_metadata(command, len(audio_bytes))
+def print_metadata(client: CommUClient, command: Command, base_path: Path) -> None:
+    metadata = client.build_metadata(command, base_path)
     print(metadata.decode("utf-8"), end="")
-    print(f"# audio.bytes={len(audio_bytes)}")
+    print(f"# audio.bytes={audio_payload_length(command, base_path)}")

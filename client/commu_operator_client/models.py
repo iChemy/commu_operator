@@ -36,16 +36,22 @@ class LEDSettings(BaseModel):
 
 
 class Action(BaseModel):
-    type: Literal["pose", "led", "wait"]
+    type: Literal["audio", "pose", "led", "wait"]
     duration_ms: int = Field(default=0, ge=0)
+    audio: Optional[str] = None
     pose: Dict[ServoName, float] = Field(default_factory=dict)
     led: Optional[LEDSettings] = None
 
     @model_validator(mode="after")
     def validate_payload(self) -> "Action":
-        if self.type == "pose" and not self.pose:
+        if self.type == "audio":
+            if self.audio is None or not self.audio.strip():
+                raise ValueError("audio action requires audio")
+            if self.duration_ms != 0:
+                raise ValueError("audio action does not accept duration_ms")
+        elif self.type == "pose" and not self.pose:
             raise ValueError("pose action requires pose")
-        if self.type == "led" and (self.led is None or self.led.is_empty()):
+        elif self.type == "led" and (self.led is None or self.led.is_empty()):
             raise ValueError("led action requires at least one LED value")
         return self
 
@@ -55,7 +61,7 @@ class Command(BaseModel):
 
 
 class BatchCommand(Command):
-    audio: Optional[str] = None
+    pass
 
 
 class CommandBatch(BaseModel):

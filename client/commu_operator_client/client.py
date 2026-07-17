@@ -1,4 +1,5 @@
 import socket
+from pathlib import Path
 
 from .config import DEFAULT_TIMEOUT
 from .errors import CommUConnectionError, CommUServerError
@@ -12,8 +13,8 @@ class CommUClient:
         self.port = port
         self.timeout = timeout
 
-    def send(self, command: Command, audio_bytes: bytes = b"") -> None:
-        payload = build_payload(command, audio_bytes)
+    def send(self, command: Command, base_path: Path | None = None) -> None:
+        payload = build_payload(command, base_path)
         try:
             with socket.create_connection((self.host, self.port), timeout=self.timeout) as sock:
                 sock.sendall(payload)
@@ -24,5 +25,5 @@ class CommUClient:
         if response != "OK":
             raise CommUServerError(response or "empty response from server")
 
-    def build_metadata(self, command: Command, audio_length: int = 0) -> bytes:
-        return build_metadata(command, audio_length)
+    def build_metadata(self, command: Command, base_path: Path | None = None) -> bytes:
+        return build_metadata(command, base_path)
