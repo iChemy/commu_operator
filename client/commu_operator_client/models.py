@@ -59,11 +59,3 @@ class Action(BaseModel):
 
 class Command(BaseModel):
     actions: List[Action] = Field(default_factory=list)
-
-
-class BatchCommand(Command):
-    pass
-
-
-class CommandBatch(BaseModel):
-    commands: List[BatchCommand] = Field(default_factory=list)

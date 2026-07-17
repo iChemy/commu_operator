@@ -3,7 +3,7 @@
 CommU を PC 側の client から操作するための最小構成です。
 
 `commu_operator_mock` に含まれていたジェスチャー生成、LLM、TTS、生成済み実行データは含めていません。
-このプロジェクトは、既に用意した音声ファイルや command/batch JSON を CommU 側 backend に送り、
+このプロジェクトは、既に用意した音声ファイルや command JSON を CommU 側 backend に送り、
 CommU に発話、姿勢変更、LED 制御、待機を実行させることだけを扱います。
 
 ## 構成
@@ -41,15 +41,15 @@ PC 側で `client` ディレクトリに移動して実行します。
 uv run python main.py list-servos
 uv run python main.py send --host COMMU_IP_ADDRESS --audio path/to/speech.wav
 uv run python main.py send --host COMMU_IP_ADDRESS --pose HEAD_Y=20 --duration-ms 800
-uv run python main.py send --host COMMU_IP_ADDRESS --led-body "#00aaff"
+uv run python main.py send --host COMMU_IP_ADDRESS --led-body "#00aaff" --duration-ms 800
 uv run python main.py send --host COMMU_IP_ADDRESS --command examples/command_pose_led_wait.json
-uv run python main.py batch --host COMMU_IP_ADDRESS examples/batch_test.json
+uv run python main.py send --host COMMU_IP_ADDRESS --command examples/command_greeting_with_gesture.json
 ```
 
 送信内容だけ確認する場合:
 
 ```sh
-uv run python main.py send --pose HEAD_Y=20 --duration-ms 800 --dry-run
+uv run python main.py send --command examples/command_greeting_with_gesture.json --dry-run
 ```
 
 MP3 など WAV 以外の音声を渡す場合、client 側で `ffmpeg` が必要です。
@@ -58,8 +58,7 @@ client は送信前に音声を `Signed 16 bit Little Endian / 22050 Hz / Mono` 
 ## Command JSON
 
 `command` は、backend に 1 回送る操作のまとまりです。
-音声を含めたい場合は、command JSON 内に `audio` action を書きます。
-`--audio` は JSON を使わずに音声再生だけを直接送るための簡易オプションです。
+`actions` に `audio`、`pose`、`wait` を順番に並べます。
 
 ```json
 {
@@ -74,11 +73,7 @@ client は送信前に音声を `Signed 16 bit Little Endian / 22050 Hz / Mono` 
       "pose": {
         "HEAD_P": 15,
         "HEAD_Y": 0
-      }
-    },
-    {
-      "type": "pose",
-      "duration_ms": 300,
+      },
       "led": {
         "body": "#00aaff",
         "left_cheek": 128,
@@ -97,46 +92,14 @@ client は送信前に音声を `Signed 16 bit Little Endian / 22050 Hz / Mono` 
 `audio` action は音声再生を開始するだけで、`duration_ms` は指定できません。
 音声再生中だけ動作を止めたい場合は、音声長に相当する `wait` action を `audio` の後に置きます。
 `audio` が相対パスの場合は、command JSON ファイルからの相対パスとして解決されます。
-`pose` は指定された姿勢へ `duration_ms` ミリ秒で移動します。
-姿勢を保ったまま待つ場合は、独立した `wait` action を使います。
+
+`pose` action は指定された姿勢へ `duration_ms` ミリ秒で移動します。
 LED は `pose` action の `led` フィールドとして指定します。
 `pose` と `led` を同じ action に書くと、同じ `duration_ms` で姿勢遷移と LED 変化を実行します。
 LED だけを変えたい場合も、`pose` action に `led` だけを書きます。
 未指定の `body` / `power_button` は `#000000`、未指定の `left_cheek` / `right_cheek` は `0` として扱われます。
 
-## Batch JSON
-
-`batch` は command を複数並べたものですが、送信時には全 command の `actions` を 1 つに結合し、1 TCP 接続で 1 command として送ります。
-command 間で `OK` 待ちをしないため、通信往復による余分な遅延は入りません。
-音声付きで実行する場合は、`audio` action を置きます。
-backend は `audio` action に到達した時点で音声再生を開始し、待たずに次の action へ進みます。
-`audio` が相対パスの場合は、batch JSON ファイルからの相対パスとして解決されます。
-
-```json
-{
-  "commands": [
-    {
-      "actions": [
-        {
-          "type": "audio",
-          "audio": "audio/part_001.wav"
-        },
-        {
-          "type": "pose",
-          "duration_ms": 500,
-          "pose": {
-            "HEAD_Y": 20
-          }
-        },
-        {
-          "type": "wait",
-          "duration_ms": 500
-        }
-      ]
-    }
-  ]
-}
-```
+`wait` action は指定されたミリ秒だけ待機します。
 
 テスト用 JSON は `client/examples/` 配下にあります。
 

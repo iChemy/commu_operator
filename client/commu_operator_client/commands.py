@@ -1,9 +1,8 @@
 import argparse
-from pathlib import Path
 from typing import List
 
 from .errors import InvalidCommandError
-from .models import Action, Command, CommandBatch, LEDSettings, ServoName
+from .models import Action, Command, LEDSettings, ServoName
 
 
 def load_command_from_args(args: argparse.Namespace) -> Command:
@@ -40,17 +39,6 @@ def build_direct_actions(args: argparse.Namespace) -> List[Action]:
         actions.append(Action(type="wait", duration_ms=args.wait_ms))
 
     return actions
-
-
-def load_batch(path: Path) -> CommandBatch:
-    return CommandBatch.model_validate_json(path.read_text(encoding="utf-8"))
-
-
-def flatten_batch(batch: CommandBatch) -> Command:
-    actions = []
-    for item in batch.commands:
-        actions.extend(item.actions)
-    return Command(actions=actions)
 
 
 def parse_pose_argument(value: str) -> tuple[ServoName, float]:

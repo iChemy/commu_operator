@@ -4,7 +4,7 @@ from pathlib import Path
 from pydantic import ValidationError
 
 from .client import CommUClient
-from .commands import flatten_batch, load_batch, load_command_from_args
+from .commands import load_command_from_args
 from .config import DEFAULT_HOST, DEFAULT_PORT, DEFAULT_TIMEOUT
 from .errors import CommUClientError, InvalidCommandError
 from .models import Command
@@ -57,12 +57,6 @@ def build_parser() -> argparse.ArgumentParser:
     send_parser.add_argument("--dry-run", action="store_true")
     send_parser.set_defaults(func=send_command)
 
-    batch_parser = subparsers.add_parser("batch", help="flatten a batch JSON file and send it as one command")
-    batch_parser.add_argument("batch", type=Path, help="batch JSON file")
-    add_connection_arguments(batch_parser)
-    batch_parser.add_argument("--dry-run", action="store_true")
-    batch_parser.set_defaults(func=batch_command)
-
     list_parser = subparsers.add_parser("list-servos", help="show supported servo names")
     list_parser.set_defaults(func=list_servos)
     return parser
@@ -105,21 +99,6 @@ def send_command(args: argparse.Namespace) -> None:
 
     client.send(command, base_path)
     print("OK")
-
-
-def batch_command(args: argparse.Namespace) -> None:
-    batch = load_batch(args.batch)
-    command = flatten_batch(batch)
-    client = CommUClient(args.host, args.port, args.timeout)
-    base_path = args.batch.parent
-
-    if args.dry_run:
-        print(f"# batch.commands={len(batch.commands)}")
-        print_metadata(client, command, base_path)
-        return
-
-    client.send(command, base_path)
-    print("OK batch")
 
 
 def print_metadata(client: CommUClient, command: Command, base_path: Path) -> None:

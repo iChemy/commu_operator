@@ -1,0 +1,58 @@
+{
+  "actions": [
+    {
+      "type": "audio",
+      "audio": "greeting.mp3"
+    },
+    {
+      "type": "pose",
+      "duration_ms": 3500,
+      "pose": {
+        "HEAD_Y": 12,
+        "HEAD_P": -6,
+        "R_SHOULDER_P": -45,
+        "R_SHOULDER_R": -18
+      },
+      "led": {
+        "body": "#00aaff",
+        "left_cheek": 96,
+        "right_cheek": 96,
+        "power_button": "#00aaff"
+      }
+    },
+    {
+      "type": "pose",
+      "duration_ms": 2550,
+      "pose": {
+        "HEAD_Y": -10,
+        "HEAD_P": 4,
+        "R_SHOULDER_P": -20,
+        "R_SHOULDER_R": -8
+      }
+    },
+    {
+      "type": "wait",
+      "duration_ms": 250
+    },
+    {
+      "type": "pose",
+      "duration_ms": 2600,
+      "pose": {
+        "HEAD_Y": 0,
+        "HEAD_P": 0,
+        "R_SHOULDER_P": 0,
+        "R_SHOULDER_R": 0
+      }
+    },
+    {
+      "type": "pose",
+      "duration_ms": 2300,
+      "led": {
+        "body": "#000000",
+        "left_cheek": 0,
+        "right_cheek": 0,
+        "power_button": "#000000"
+      }
+    }
+  ]
+}
