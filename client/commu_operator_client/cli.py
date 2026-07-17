@@ -82,15 +82,13 @@ def add_led_arguments(parser: argparse.ArgumentParser) -> None:
 
 
 def list_servos(_args: argparse.Namespace) -> None:
-    print("name            range_deg    ratio    aliases")
-    print("--------------  -----------  -------  -------")
+    print("name            range_deg    ratio")
+    print("--------------  -----------  -------")
     for spec in SERVO_SPECS:
-        aliases = ", ".join(spec.aliases) if spec.aliases else "-"
         print(
             f"{spec.name.value:<14}  "
             f"{spec.range_text:<11}  "
-            f"{spec.reduction_ratio:<7g}  "
-            f"{aliases}"
+            f"{spec.reduction_ratio:<7g}"
         )
     print()
     print("Angles in command JSON and --pose are degrees. Values outside range are clamped by backend.")

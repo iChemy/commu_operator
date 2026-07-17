@@ -187,21 +187,17 @@ public class CommandDecoder {
         Map<String, ServoSpec> specs = new HashMap<>();
         putSpec(specs, new ServoSpec(CCommUMotion.SV_BODY_P, -15, 15, 3.833), "BODY_P");
         putSpec(specs, new ServoSpec(CCommUMotion.SV_BODY_Y, -67, 67, 1.0), "BODY_Y");
-        putSpec(specs, new ServoSpec(CCommUMotion.SV_L_SHOULDER_P, -108, 108, 1.364),
-                "L_SHOULDER_P", "L_SHOU_P");
-        putSpec(specs, new ServoSpec(CCommUMotion.SV_L_SHOULDER_R, -45, 30, 1.0),
-                "L_SHOULDER_R", "L_SHOU_R");
-        putSpec(specs, new ServoSpec(CCommUMotion.SV_R_SHOULDER_P, -108, 108, 1.364),
-                "R_SHOULDER_P", "R_SHOU_P");
-        putSpec(specs, new ServoSpec(CCommUMotion.SV_R_SHOULDER_R, -30, 45, 1.0),
-                "R_SHOULDER_R", "R_SHOU_R");
+        putSpec(specs, new ServoSpec(CCommUMotion.SV_L_SHOULDER_P, -108, 108, 1.364), "L_SHOULDER_P");
+        putSpec(specs, new ServoSpec(CCommUMotion.SV_L_SHOULDER_R, -45, 30, 1.0), "L_SHOULDER_R");
+        putSpec(specs, new ServoSpec(CCommUMotion.SV_R_SHOULDER_P, -108, 108, 1.364), "R_SHOULDER_P");
+        putSpec(specs, new ServoSpec(CCommUMotion.SV_R_SHOULDER_R, -30, 45, 1.0), "R_SHOULDER_R");
         putSpec(specs, new ServoSpec(CCommUMotion.SV_HEAD_P, -20, 25, 1.0), "HEAD_P");
         putSpec(specs, new ServoSpec(CCommUMotion.SV_HEAD_R, -15, 15, 4.333), "HEAD_R");
         putSpec(specs, new ServoSpec(CCommUMotion.SV_HEAD_Y, -85, 85, 1.0), "HEAD_Y");
-        putSpec(specs, new ServoSpec(CCommUMotion.SV_EYE_P, -22, 22, 1.0), "EYE_P", "EYES_P");
+        putSpec(specs, new ServoSpec(CCommUMotion.SV_EYE_P, -22, 22, 1.0), "EYE_P");
         putSpec(specs, new ServoSpec(CCommUMotion.SV_L_EYE_Y, -35, 20, 1.0), "L_EYE_Y");
         putSpec(specs, new ServoSpec(CCommUMotion.SV_R_EYE_Y, -20, 35, 1.0), "R_EYE_Y");
-        putSpec(specs, new ServoSpec(CCommUMotion.SV_EYELIDs, -65, 3, 1.0), "EYELIDS", "EYELID");
+        putSpec(specs, new ServoSpec(CCommUMotion.SV_EYELIDs, -65, 3, 1.0), "EYELIDS");
         return specs;
     }
 
