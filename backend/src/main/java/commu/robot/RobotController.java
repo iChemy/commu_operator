@@ -17,7 +17,7 @@ import jp.vstone.RobotLib.CRobotUtil;
 public class RobotController implements AutoCloseable {
     private static final String TAG = "RobotController";
     private static final Byte[] INITIAL_POSE_IDS = new Byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14};
-    private static final Short[] INITIAL_POSE_VALUES = new Short[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    private static final Short[] INITIAL_POSE_VALUES = new Short[] {0, 0, 20, 0, -20, 0, 0, 0, 0, 0, 0, 0, 0, 0};
     private static final int SERVO_ON_WAIT_MS = 1000;
     private static final int INITIAL_POSE_DURATION_MS = 500;
 
