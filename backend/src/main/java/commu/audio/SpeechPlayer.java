@@ -1,59 +1,56 @@
 package commu.audio;
 
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
+
+import jp.vstone.RobotLib.CPlayWave;
 
 public class SpeechPlayer {
     private static final Object LOCK = new Object();
-    private static Process process;
+    private static CPlayWave player;
 
     private SpeechPlayer() {
     }
 
-    public static Process play(Path path) throws IOException {
+    public static CPlayWave play(Path path) {
         synchronized (LOCK) {
             stop();
-            process = new ProcessBuilder("aplay", path.toString()).start();
-            return process;
+            player = CPlayWave.PlayWave(path.toString());
+            return player;
         }
     }
 
-    public static Process play(byte[] bytes) throws IOException {
+    public static CPlayWave play(byte[] bytes) {
         synchronized (LOCK) {
-            Path path = Paths.get("sound", "current_command.wav");
-            Path parent = path.getParent();
-            if (parent != null) {
-                Files.createDirectories(parent);
-            }
-            Files.write(path, bytes);
-            return play(path);
+            stop();
+            player = CPlayWave.PlayWave(bytes);
+            return player;
         }
     }
 
-    public static void waitUntilFinished(Process target) throws InterruptedException {
+    public static void waitUntilFinished(CPlayWave target) throws InterruptedException {
         if (target == null) {
             return;
         }
-        target.waitFor();
+        while (target.isPlaying()) {
+            Thread.sleep(10);
+        }
     }
 
     public static void stop() {
         synchronized (LOCK) {
-            if (process == null || !process.isAlive()) {
-                process = null;
+            if (player == null || !player.isPlaying()) {
+                player = null;
                 return;
             }
 
-            process.destroy();
-            waitForStop(process);
-            process = null;
+            player.stop();
+            waitForStop(player);
+            player = null;
         }
     }
 
-    private static void waitForStop(Process target) {
-        while (target.isAlive()) {
+    private static void waitForStop(CPlayWave target) {
+        while (target.isPlaying()) {
             try {
                 Thread.sleep(10);
             } catch (InterruptedException e) {

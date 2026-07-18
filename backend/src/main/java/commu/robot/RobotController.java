@@ -16,6 +16,10 @@ import jp.vstone.RobotLib.CRobotUtil;
 
 public class RobotController implements AutoCloseable {
     private static final String TAG = "RobotController";
+    private static final Byte[] INITIAL_POSE_IDS = new Byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14};
+    private static final Short[] INITIAL_POSE_VALUES = new Short[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    private static final int SERVO_ON_WAIT_MS = 1000;
+    private static final int INITIAL_POSE_DURATION_MS = 500;
 
     private final CCommUMotion motion;
     private boolean servoOn;
@@ -36,9 +40,11 @@ public class RobotController implements AutoCloseable {
         CRobotUtil.Log(TAG, "Rev. " + memory.FirmwareRev.get());
         CRobotUtil.Log(TAG, "Servo On");
         motion.ServoOn();
+        CRobotUtil.wait(SERVO_ON_WAIT_MS);
 
         RobotController controller = new RobotController(memory, motion);
         controller.servoOn = true;
+        controller.resetInitialPose();
         return controller;
     }
 
@@ -67,6 +73,15 @@ public class RobotController implements AutoCloseable {
     private void executeAudio(AudioAction action, int index, int total) throws IOException {
         CRobotUtil.Log(TAG, "audio action " + index + "/" + total + ": " + action.getAudioFile());
         SpeechPlayer.play(action.getAudioFile());
+    }
+
+    private void resetInitialPose() {
+        CRobotPose pose = new CRobotPose();
+        pose.SetPose(INITIAL_POSE_IDS.clone(), INITIAL_POSE_VALUES.clone());
+
+        CRobotUtil.Log(TAG, "Reset initial pose: " + INITIAL_POSE_DURATION_MS + " ms");
+        motion.play(pose, INITIAL_POSE_DURATION_MS);
+        motion.waitEndinterpAll();
     }
 
     private void executePose(PoseAction action, int index, int total) {
