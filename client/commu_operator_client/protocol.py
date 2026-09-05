@@ -6,6 +6,11 @@ from .audio import load_audio
 from .models import Command, LEDSettings, ServoName
 
 
+def build_get_pose_payload() -> bytes:
+    metadata = b"request=get_pose\n"
+    return struct.pack(">I", len(metadata)) + metadata
+
+
 def build_payload(command: Command, base_path: Path | None = None) -> bytes:
     metadata, audio_payload = build_metadata_and_audio(command, base_path)
     return struct.pack(">I", len(metadata)) + metadata + audio_payload

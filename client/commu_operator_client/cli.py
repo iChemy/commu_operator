@@ -7,7 +7,7 @@ from .client import CommUClient
 from .commands import load_command_from_args
 from .config import DEFAULT_HOST, DEFAULT_PORT, DEFAULT_TIMEOUT
 from .errors import CommUClientError, InvalidCommandError
-from .models import Command
+from .models import Action, Command
 from .protocol import audio_payload_length
 from .servos import SERVO_SPECS
 
@@ -32,7 +32,7 @@ def run_cli() -> None:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Send generic operation commands to CommU.")
+    parser = argparse.ArgumentParser(description="Operate CommU over the command server.")
     subparsers = parser.add_subparsers(dest="command_name", required=True)
 
     send_parser = subparsers.add_parser("send", help="send one command")
@@ -59,6 +59,24 @@ def build_parser() -> argparse.ArgumentParser:
 
     list_parser = subparsers.add_parser("list-servos", help="show supported servo names")
     list_parser.set_defaults(func=list_servos)
+
+    get_pose_parser = subparsers.add_parser(
+        "get-pose",
+        help="read the current pose and print replayable command JSON",
+    )
+    add_connection_arguments(get_pose_parser)
+    get_pose_parser.add_argument(
+        "--duration-ms",
+        type=int,
+        default=1000,
+        help="duration to store in the generated pose action",
+    )
+    get_pose_parser.add_argument(
+        "--output",
+        type=Path,
+        help="write UTF-8 command JSON to this file instead of stdout",
+    )
+    get_pose_parser.set_defaults(func=get_pose)
     return parser
 
 
@@ -99,6 +117,19 @@ def send_command(args: argparse.Namespace) -> None:
 
     client.send(command, base_path)
     print("OK")
+
+
+def get_pose(args: argparse.Namespace) -> None:
+    client = CommUClient(args.host, args.port, args.timeout)
+    pose = client.get_pose()
+    command = Command(
+        actions=[Action(type="pose", duration_ms=args.duration_ms, pose=pose)]
+    )
+    command_json = command.model_dump_json(indent=2, exclude_none=True) + "\n"
+    if args.output is None:
+        print(command_json, end="")
+    else:
+        args.output.write_text(command_json, encoding="utf-8")
 
 
 def print_metadata(client: CommUClient, command: Command, base_path: Path) -> None:

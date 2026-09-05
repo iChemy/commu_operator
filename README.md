@@ -44,7 +44,21 @@ uv run python main.py send --host COMMU_IP_ADDRESS --pose HEAD_Y=20 --duration-m
 uv run python main.py send --host COMMU_IP_ADDRESS --led-body "#00aaff" --duration-ms 800
 uv run python main.py send --host COMMU_IP_ADDRESS --command examples/command_pose_led_wait.json
 uv run python main.py send --host COMMU_IP_ADDRESS --command examples/command_greeting_with_gesture.json
+uv run python main.py get-pose --host COMMU_IP_ADDRESS
 ```
+
+現在の姿勢を JSON に保存し、そのまま再送する場合:
+
+```sh
+uv run python main.py get-pose --host COMMU_IP_ADDRESS --duration-ms 800 --output captured_pose.json
+uv run python main.py send --host COMMU_IP_ADDRESS --command captured_pose.json
+```
+
+`get-pose` は CommU のサーボから読み取った現在角度を degree に変換し、1 個の `pose` action を持つ
+完全な command JSON を標準出力へ出します。`--duration-ms` は、その JSON を再送するときの姿勢遷移時間です。
+`--output` を指定すると、リダイレクトを使わず UTF-8 の JSON ファイルへ保存できます。
+出力する 13 関節の名前と値は、command JSON の `pose` と同じ形式です。
+client から制御できない口のサーボは含みません。
 
 送信内容だけ確認する場合:
 

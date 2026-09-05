@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class CommandRequest {
+public class CommandRequest implements ClientRequest {
     private final List<RobotAction> actions;
 
     public CommandRequest(List<RobotAction> actions) {

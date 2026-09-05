@@ -4,6 +4,8 @@ import commu.model.AudioAction;
 import commu.model.PoseAction;
 import commu.model.RobotAction;
 import commu.model.WaitAction;
+import commu.robot.ServoSpec;
+import commu.robot.ServoSpecs;
 
 import java.awt.Color;
 import java.io.DataInputStream;
@@ -21,12 +23,9 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 
-import jp.vstone.RobotLib.CCommUMotion;
-
 public class CommandDecoder {
     private static final int MAX_META_BYTES = 1024 * 1024;
     private static final int BUFFER_SIZE = 8192;
-    private static final Map<String, ServoSpec> SERVO_SPECS = createServoSpecs();
 
     private final Path audioDirectory;
 
@@ -39,8 +38,26 @@ public class CommandDecoder {
     }
 
     public CommandRequest decode(InputStream inputStream) throws IOException {
+        ClientRequest request = decodeRequest(inputStream);
+        if (!(request instanceof CommandRequest)) {
+            throw new IOException("expected command request");
+        }
+        return (CommandRequest) request;
+    }
+
+    public ClientRequest decodeRequest(InputStream inputStream) throws IOException {
         DataInputStream input = new DataInputStream(inputStream);
         Properties metadata = readMetadata(input);
+        String requestType = metadata.getProperty("request", "command").trim().toLowerCase(Locale.ROOT);
+        if ("get_pose".equals(requestType)) {
+            if (readInt(metadata, "actions", 0) != 0) {
+                throw new IOException("get_pose request does not accept actions");
+            }
+            return new GetPoseRequest();
+        }
+        if (!"command".equals(requestType)) {
+            throw new IOException("unknown request: " + requestType);
+        }
         List<RobotAction> actions = readActions(input, metadata);
         return new CommandRequest(actions);
     }
@@ -136,11 +153,11 @@ public class CommandDecoder {
                 throw new IOException("invalid pose entry: " + trimmed);
             }
 
-            ServoSpec spec = SERVO_SPECS.get(parts[0].trim().toUpperCase(Locale.ROOT));
+            ServoSpec spec = ServoSpecs.findByName(parts[0].trim().toUpperCase(Locale.ROOT));
             if (spec == null) {
                 throw new IOException("unknown servo: " + parts[0]);
             }
-            pose.put(spec.id, spec.toRobotValue(readAngle(parts[1].trim(), trimmed)));
+            pose.put(spec.getId(), spec.toRobotValue(readAngle(parts[1].trim(), trimmed)));
         }
 
         return pose;
@@ -187,46 +204,4 @@ public class CommandDecoder {
         }
     }
 
-    private static Map<String, ServoSpec> createServoSpecs() {
-        Map<String, ServoSpec> specs = new HashMap<>();
-        putSpec(specs, new ServoSpec(CCommUMotion.SV_BODY_P, -15, 15, 3.833), "BODY_P");
-        putSpec(specs, new ServoSpec(CCommUMotion.SV_BODY_Y, -67, 67, 1.0), "BODY_Y");
-        putSpec(specs, new ServoSpec(CCommUMotion.SV_L_SHOULDER_P, -108, 108, 1.364), "L_SHOULDER_P");
-        putSpec(specs, new ServoSpec(CCommUMotion.SV_L_SHOULDER_R, -45, 30, 1.0), "L_SHOULDER_R");
-        putSpec(specs, new ServoSpec(CCommUMotion.SV_R_SHOULDER_P, -108, 108, 1.364), "R_SHOULDER_P");
-        putSpec(specs, new ServoSpec(CCommUMotion.SV_R_SHOULDER_R, -30, 45, 1.0), "R_SHOULDER_R");
-        putSpec(specs, new ServoSpec(CCommUMotion.SV_HEAD_P, -20, 25, 1.0), "HEAD_P");
-        putSpec(specs, new ServoSpec(CCommUMotion.SV_HEAD_R, -15, 15, 4.333), "HEAD_R");
-        putSpec(specs, new ServoSpec(CCommUMotion.SV_HEAD_Y, -85, 85, 1.0), "HEAD_Y");
-        putSpec(specs, new ServoSpec(CCommUMotion.SV_EYE_P, -22, 22, 1.0), "EYE_P");
-        putSpec(specs, new ServoSpec(CCommUMotion.SV_L_EYE_Y, -35, 20, 1.0), "L_EYE_Y");
-        putSpec(specs, new ServoSpec(CCommUMotion.SV_R_EYE_Y, -20, 35, 1.0), "R_EYE_Y");
-        putSpec(specs, new ServoSpec(CCommUMotion.SV_EYELIDs, -65, 3, 1.0), "EYELIDS");
-        return specs;
-    }
-
-    private static void putSpec(Map<String, ServoSpec> specs, ServoSpec spec, String... names) {
-        for (String name : names) {
-            specs.put(name, spec);
-        }
-    }
-
-    private static class ServoSpec {
-        private final byte id;
-        private final double minDegrees;
-        private final double maxDegrees;
-        private final double reductionRatio;
-
-        ServoSpec(byte id, double minDegrees, double maxDegrees, double reductionRatio) {
-            this.id = id;
-            this.minDegrees = minDegrees;
-            this.maxDegrees = maxDegrees;
-            this.reductionRatio = reductionRatio;
-        }
-
-        short toRobotValue(double degrees) {
-            double clamped = Math.max(minDegrees, Math.min(maxDegrees, degrees));
-            return (short) Math.round(clamped * 10.0 * reductionRatio);
-        }
-    }
 }

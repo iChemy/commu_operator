@@ -8,6 +8,8 @@ import commu.model.WaitAction;
 import commu.protocol.CommandRequest;
 
 import java.io.IOException;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import jp.vstone.RobotLib.CCommUMotion;
 import jp.vstone.RobotLib.CRobotMem;
@@ -36,7 +38,10 @@ public class RobotController implements AutoCloseable {
             throw new IllegalStateException("failed to connect VSMD");
         }
 
-        motion.InitRobot_CommU();
+        if (!motion.InitRobot_CommU()) {
+            memory.Disconnect();
+            throw new IllegalStateException("failed to initialize CommU");
+        }
         CRobotUtil.Log(TAG, "Rev. " + memory.FirmwareRev.get());
         CRobotUtil.Log(TAG, "Servo On");
         motion.ServoOn();
@@ -56,6 +61,27 @@ public class RobotController implements AutoCloseable {
             executeAction(action, index, request.getActions().size());
             index++;
         }
+    }
+
+    public synchronized Map<String, Double> getCurrentPose() {
+        CRobotPose currentPose = motion.getReadPose();
+        if (currentPose == null) {
+            throw new IllegalStateException("failed to read current pose");
+        }
+
+        Map<Byte, Short> robotValues = currentPose.getPose();
+        if (robotValues == null) {
+            throw new IllegalStateException("failed to read current pose");
+        }
+        Map<String, Double> degrees = new LinkedHashMap<>();
+        for (ServoSpec spec : ServoSpecs.all()) {
+            Short robotValue = robotValues.get(spec.getId());
+            if (robotValue == null || robotValue.shortValue() == Short.MIN_VALUE) {
+                throw new IllegalStateException("failed to read servo: " + spec.getName());
+            }
+            degrees.put(spec.getName(), spec.toDegrees(robotValue.shortValue()));
+        }
+        return degrees;
     }
 
     private void executeAction(RobotAction action, int index, int total) throws IOException {

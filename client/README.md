@@ -68,6 +68,26 @@ uv run python main.py send --host COMMU_IP_ADDRESS --command examples/command_po
 uv run python main.py send --command examples/command_greeting_with_gesture.json --dry-run
 ```
 
+現在の姿勢を取得する:
+
+```sh
+uv run python main.py get-pose --host COMMU_IP_ADDRESS
+```
+
+出力は、取得した 13 関節の実測角度を `pose` に含む完全な command JSON です。
+値の単位は `send --pose` と同じ degree なので、ファイルへ保存して無加工で再送できます。
+
+```sh
+uv run python main.py get-pose --host COMMU_IP_ADDRESS --duration-ms 800 --output captured_pose.json
+uv run python main.py send --host COMMU_IP_ADDRESS --command captured_pose.json
+```
+
+`--duration-ms` の既定値は `1000` で、取得処理の待ち時間ではなく、生成した JSON を再送するときの
+姿勢遷移時間です。`--output` は OS のシェルに依存せず UTF-8 で保存します。省略時は標準出力へ表示します。
+口のサーボ (`MOUTH`) は client から姿勢値を送れないため、取得結果には含みません。
+サーバーが別の command を実行中の場合、`get-pose` はその command の全 action が完了してから処理されます。
+この機能を使う前に、client と backend の両方を更新して backend を再起動してください。
+
 ## Command JSON
 
 `command` は、backend に 1 回送る操作のまとまりです。
@@ -150,4 +170,10 @@ R_EYE_Y         -20..35      1
 EYELIDS         -65..3       1
 
 Angles in command JSON and --pose are degrees. Values outside range are clamped by backend.
+```
+
+## テスト
+
+```sh
+uv run python -m unittest discover -s tests -v
 ```

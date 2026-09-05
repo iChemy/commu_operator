@@ -1,7 +1,11 @@
 package commu.server;
 
+import com.google.gson.Gson;
+
+import commu.protocol.ClientRequest;
 import commu.protocol.CommandDecoder;
 import commu.protocol.CommandRequest;
+import commu.protocol.GetPoseRequest;
 import commu.robot.RobotController;
 
 import java.io.BufferedInputStream;
@@ -13,6 +17,7 @@ import jp.vstone.RobotLib.CRobotUtil;
 
 public class ClientHandler {
     private static final String TAG = "ClientHandler";
+    private static final Gson GSON = new Gson();
 
     private final Socket socket;
     private final CommandDecoder decoder;
@@ -28,11 +33,17 @@ public class ClientHandler {
         try (Socket clientSocket = socket) {
             try {
                 BufferedInputStream input = new BufferedInputStream(clientSocket.getInputStream());
-                CommandRequest request = decoder.decode(input);
-                robot.execute(request);
-                writeResponse(clientSocket, "OK\n");
+                ClientRequest request = decoder.decodeRequest(input);
+                if (request instanceof CommandRequest) {
+                    robot.execute((CommandRequest) request);
+                    writeResponse(clientSocket, "OK\n");
+                } else if (request instanceof GetPoseRequest) {
+                    writeResponse(clientSocket, GSON.toJson(robot.getCurrentPose()) + "\n");
+                } else {
+                    throw new IllegalArgumentException("unsupported request");
+                }
             } catch (Exception e) {
-                CRobotUtil.Log(TAG, "Command failed: " + formatError(e));
+                CRobotUtil.Log(TAG, "Request failed: " + formatError(e));
                 writeError(clientSocket, e);
             }
         } catch (IOException e) {
